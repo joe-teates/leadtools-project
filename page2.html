@@ -1,35 +1,203 @@
 <html>
-    <head>
-        <title>Basic WebViewer</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    </head>
+  <head>
+    <title>Basic WebViewer</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+  </head>
+
+  <!-- Import WebViewer as a script tag -->
+  <script src="lib/webviewer.min.js"></script>
+
+  <body>
+    <p class="title">Find the difference between these two files, it might lead to the next page...</p>
+    <style>
+      p {text-align: center;}
+    </style>
+    <div id="viewer" style="width: 1024px; height: 600px; margin: 0 auto"></div>
+    <div id="viewer2" style="width: 1024px; height: 600px; margin: 0 auto"></div>
+    <script>
+      WebViewer(
+        {
+          fullAPI: true,
+          disableMultiViewerComparison: true,
+          path: "lib", // path to the Apryse 'lib' folder on your server
+          licenseKey:
+            "demo:1719239450047:7fb6d0a7030000000066d3bbf9368183407c6506da0adb3b45a454b552", // sign up to get a key at https://dev.apryse.com
+          initialDoc: "stenography.pdf",
+          // ui: "beta",
+          // initialDoc: '/path/to/my/file.pdf',  // You can also use documents on your server
+        },
+        document.getElementById("viewer")
+      ).then((instance) => {
+        const { UI, Core } = instance;
+        const { annotationManager, Annotations, documentViewer } = Core;
+        // const { UI, documentViewer, annotationManager } = instance.Core;
+
+        UI.addEventListener(UI.Events.MULTI_VIEWER_READY, () => {
+          const [documentViewer1, documentViewer2] = Core.getDocumentViewers();
+          const startCompare = async () => {
+            const shouldCompare =
+              documentViewer1.getDocument() && documentViewer2.getDocument();
+            if (shouldCompare) {
+              // Check if both documents loaded before comparing
+              // const beforeColor = new Color(21, 205, 131, 0.4);
+              // const afterColor = new Color(255, 73, 73, 0.4);
+              // const options = { beforeColor, afterColor };
+              // const { doc1Annotations, doc2Annotations, diffCount } =
+              //   await documentViewer1.startSemanticDiff(
+              //     documentViewer2,
+              //     options
+              //   );
+              // inside `viewerLoaded`
+    const getPageArray = async (doc) => {
+      const arr = [];
+      const itr = await doc.getPageIterator(1);
+
+      for (itr; await itr.hasNext(); itr.next()) {
+        const page = await itr.current();
+        arr.push(page);
+      }
+
+      return arr;
+    }
+
+    const [doc1Pages, doc2Pages] = await Promise.all([
+      getPageArray(doc1),
+      getPageArray(doc2)
+    ]);
+
+    console.log(doc1Pages, doc2Pages);
+
+    const newDoc = await PDFNet.PDFDoc.create();
+    newDoc.lock();
+
+    // we'll loop over the doc with the most pages
+    const biggestLength = Math.max(doc1Pages.length, doc2Pages.length)
+
+    for(let i = 0; i < biggestLength; i++) {
+      let page1 = doc1Pages[i];
+      let page2 = doc2Pages[i];
+
+      // handle the case where one document has more pages than the other
+      if (!page1) {
+        page1 = await doc1.pageCreate(); // create a blank page
+      } 
+      if (!page2) {
+        page2 = await doc2.pageCreate(); // create a blank page
+      }
+      await newDoc.appendVisualDiff(page1, page2)
+    }
     
-    <!-- Import WebViewer as a script tag -->
-    <script src='lib/webviewer.min.js'></script>
-    
-    <body>
-        <div id='viewer' style='width: 1024px; height: 600px; margin: 0 auto;'></div>
-  <script>
-    WebViewer({
-      path: 'lib', // path to the Apryse 'lib' folder on your server
-      licenseKey: 'demo:1719239450047:7fb6d0a7030000000066d3bbf9368183407c6506da0adb3b45a454b552', // sign up to get a key at https://dev.apryse.com
-      initialDoc: 'differerntfile.pdf',
-      ui: 'beta',
-      // initialDoc: '/path/to/my/file.pdf',  // You can also use documents on your server
-    }, document.getElementById('viewer'))
-    .then(instance => {
-      const { documentViewer, annotationManager } = instance.Core;
-  
-      // call methods from instance, documentViewer and annotationManager as needed
-  
-      // you can also access major namespaces from the instance as follows:
-      // const Tools = instance.Core.Tools;
-      // const Annotations = instance.Core.Annotations;
-  
-      documentViewer.addEventListener('documentLoaded', () => {
-        // call methods relating to the loaded document
+    newDoc.unlock(); 
+
+    // display the document!
+    // instance is a global variable thats automatically defined inside the config file.
+    instance.UI.loadDocument(newDoc);
+
+
+
+
+            }
+          };
+          documentViewer1.addEventListener("documentLoaded", startCompare);
+          documentViewer2.addEventListener("documentLoaded", startCompare);
+          documentViewer1.loadDocument("compare1.pdf");
+          documentViewer2.loadDocument("compare2.pdf");
+        });
+        UI.enableFeatures([UI.Feature.MultiViewerMode]);
+
+        // you can also access major namespaces from the instance as follows:
+        // const Tools = instance.Core.Tools;
+        // const Annotations = instance.Core.Annotations;
       });
-    });
-  </script>
-</body>
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+WebViewer(
+        {
+          fullAPI: true,
+          path: "lib", // path to the Apryse 'lib' folder on your server
+          licenseKey:
+            "demo:1719239450047:7fb6d0a7030000000066d3bbf9368183407c6506da0adb3b45a454b552", // sign up to get a key at https://dev.apryse.com
+          initialDoc: "stenography.pdf",
+          ui: "beta",
+          // initialDoc: '/path/to/my/file.pdf',  // You can also use documents on your server
+        },
+        document.getElementById("viewer2")
+      ).then((instance) => {
+        const { documentViewer, annotationManager, PDFNet } = instance.Core;
+
+        // call methods from instance, documentViewer and annotationManager as needed
+
+        // you can also access major namespaces from the instance as follows:
+        // const Tools = instance.Core.Tools;
+        // const Annotations = instance.Core.Annotations;
+
+        documentViewer.addEventListener("documentLoaded", () => {
+          // call methods relating to the loaded document
+        });
+
+        instance.UI.addEventListener("viewerLoaded", async () => {
+          // initialize PDFNet
+          await PDFNet.initialize();
+
+          const getDocument = async (url) => {
+            const newDoc = await instance.Core.createDocument(url);
+            return await newDoc.getPDFDoc();
+          };
+
+          const [doc1, doc2] = await Promise.all([
+            getDocument("compare1.pdf"),
+            getDocument("compare2.pdf"),
+          ]);
+
+          // inside `viewerLoaded`
+          const getPageArray = async (doc) => {
+            const arr = [];
+            const itr = await doc.getPageIterator(1);
+
+            for (itr; await itr.hasNext(); itr.next()) {
+              const page = await itr.current();
+              arr.push(page);
+            }
+
+            return arr;
+          };
+
+          const [doc1Pages, doc2Pages] = await Promise.all([
+            getPageArray(doc1),
+            getPageArray(doc2),
+          ]);
+
+          console.log(doc1Pages, doc2Pages);
+
+          const newDoc = await PDFNet.PDFDoc.create();
+          newDoc.lock();
+
+          // we'll loop over the doc with the most pages
+          const biggestLength = Math.max(doc1Pages.length, doc2Pages.length);
+
+          for (let i = 0; i < biggestLength; i++) {
+            let page1 = doc1Pages[i];
+            let page2 = doc2Pages[i];
+
+            // handle the case where one document has more pages than the other
+            if (!page1) {
+              page1 = await doc1.pageCreate(); // create a blank page
+            }
+            if (!page2) {
+              page2 = await doc2.pageCreate(); // create a blank page
+            }
+            await newDoc.appendVisualDiff(page1, page2);
+          }
+
+          newDoc.unlock();
+
+          // display the document!
+          // instance is a global variable thats automatically defined inside the config file.
+          instance.UI.loadDocument(newDoc);
+        });
+      });
+    </script>
+  </body>
 </html>
